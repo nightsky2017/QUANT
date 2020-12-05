@@ -1,0 +1,311 @@
+import ccxt
+import time
+from pprint import pprint
+import pymongo
+
+# 定义交易所(使用bitmex测试网)
+test_bitmex=ccxt.bitmex()
+test_bitmex.urls
+if 'test' in test_bitmex.urls:
+    test_bitmex.urls['api'] = test_bitmex.urls['test']
+    test_bitmex.apiKey = 'zasRuuL82JSKStfV4hMXR0Oo'
+    test_bitmex.secret = '8HeS9xGxEbedR4kukE8TbY1VnCoiIAjKs5WNuj8p7TnE1vjq'
+# 定义MongoDB
+myclient = pymongo.MongoClient("mongodb://localhost:27017/")
+mydb = myclient["TEST_BITMEX"]
+mycol = mydb["BTCUSD"]
+# mycol.drop()
+
+# 定义下单参数
+order_symbol = 'BTC/USD'
+order_type = 'limit'
+# 限价单子,委托的买或卖两个方向,别搞错
+order_side = 'buy'
+# 委托数量,不能填错
+order_amonut = 130
+# 获取XBt_USD最新价格
+XBtUSD_last = test_bitmex.fetch_ticker(order_symbol)['last']
+order_price = XBtUSD_last-20
+# 同时下3个订单
+num = 4
+while num > 0:
+    # 余额判断,显示USDT的可用余额
+    XBtUSD_balance = test_bitmex.fetch_balance()['free']['BTC']
+    free_usd = XBtUSD_balance * XBtUSD_last
+    pprint(free_usd)
+    if free_usd >= 4 and num > 1 :
+        # 下单,每次用3-1,如果最后num小于1,程序结束
+        take_order = test_bitmex.create_order(order_symbol,order_type,order_side,order_amonut* 0.3, order_price)
+        # 存储订单信息
+        mydict = {"单价": order_price, "订单号": take_order['id'], "方向": take_order['side']}
+        x = mycol.insert_one(mydict)
+        # 可以写成num-= 1
+        num = num - 1
+        order_price = order_price - 20
+        print("num为",num)
+        print("-"*20)
+
+    elif num == 1:
+        print("已结束下单")
+        num -= 1
+    time.sleep(1)
+
+# while 1:
+#     for y in mycol.find():
+#         takeorder_id = y['订单号']
+#         takeorder_side = y['方向']
+#         takeorder_price = y['单价']
+#         print("-"*20)
+#         # 获取ETH最新价格
+#         ETH_Last = huobipro.fetch_ticker(order_symbol)['last']
+#         print("ETH最新价格",ETH_Last)
+#         # print("takeorder_id",takeorder_id)
+#         # print("takeorder_side", takeorder_side)
+#         # 查询订单状态
+#         order_status = huobipro.fetch_order_status(takeorder_id,order_symbol)
+#         print(order_status)
+#
+#         # 如果买单成交
+#         if order_status == "canceled" and takeorder_side == "buy":
+#             sell_side = "sell"
+#             sell_price = takeorder_price-0.5
+#             # 下卖单
+#             take_sell_order = huobipro.create_order(order_symbol, order_type, sell_side, order_amonut, sell_price)
+#
+#             # 卖单信息存入数据库
+#             print("开始写入数据库")
+#             mydict = {"单价": take_sell_order['price'], "订单号": take__sell_order['id'], "方向": take_order['side']}
+#             x = mycol.insert_one(mydict)
+#             # 删除已完成订单
+#             myquery = {"订单号":takeorder_id}
+#             mycol.delete_one(myquery)
+#             print("已删除完成订单,订单号为:",takeorder_id)
+#             time.sleep(3)
+#
+#         elif order_status == "canceled" and takeorder_side == "sell":
+#             buy_side = "buy"
+#             buy_price = takeorder_price + 0.5
+#
+#             take_buy_order = huobipro.create_order(order_symbol, order_type, buy_side, order_amonut, buy_price)
+#             # 卖单信息存入数据库
+#             print("开始写入数据库")
+#             mydict = {"单价": take_buy_order['price'], "订单号": take_buy_order['id'], "方向": take_order['side']}
+#             x = mycol.insert_one(mydict)
+#             # 删除已完成订单
+#             myquery = {"订单号": takeorder_id}
+#             mycol.delete_one(myquery)
+#             print("已删除完成订单,订单号为:", takeorder_id)
+#             time.sleep(3)
+#         else:
+#             print("订单处于其它状态")
+#             time.sleep(1)
+# # 下单
+# take_order = test_bitmex.create_order(order_symbol,order_type,order_side,order_amonut, order_price)
+# pprint(take_order)
+# pprint(take_order )
+
+# # 获取BTC/USD交易对信息
+# symbol = "BTC/USD"
+# test_bitmex.fetch_ticker(symbol)
+# pprint(test_bitmex.fetch_ticker(symbol))
+
+#
+# # 定义交易所,加载APIKEY
+# huobipro = ccxt.huobipro({
+#     'apiKey':'ae6a6258-vf25treb80-5a7f96e9-1a2a4',
+#     'secret':'e4b873ae-60e45da0-5b405671-fbae3'
+# })
+# # 定义MongoDB
+# myclient = pymongo.MongoClient("mongodb://localhost:27017/")
+# mydb = myclient["HUOBI"]
+# mycol = mydb["ETHUSD"]
+# mycol.drop()
+#
+# # 定义下单参数
+# order_symbol = 'ETH/USDT'
+# order_type = 'limit'
+# # 限价单子,委托的买或卖两个方向,别搞错
+# order_side = 'buy'
+# # 委托数量,不能填错
+# order_amonut = 0.1
+# # 获取ETH最新价格
+# ETH_Last = huobipro.fetch_ticker(order_symbol)['last']
+# print(ETH_Last)
+#
+# order_price = ETH_Last - 20
+# # 委托价格,不能填错
+#
+# # 同时下3个订单
+# num = 4
+# while num > 0:
+#     # 余额判断,显示USDT的可用余额
+#     ETH_balance = huobipro.fetch_balance()['free']['USDT']
+#     if ETH_balance >= 5 and num > 1 :
+#         # 下单,每次用3-1,如果最后num小于1,程序结束
+#         take_order = huobipro.create_order(order_symbol,order_type,order_side,order_amonut, order_price)
+#         # 存储订单信息
+#         mydict = {"单价": order_price, "订单号": take_order['id'], "方向": take_order['side']}
+#         x = mycol.insert_one(mydict)
+#         # 可以写成num-= 1
+#         num = num - 1
+#         order_price = order_price - 20
+#         print("num为",num)
+#         print("-"*20)
+#
+#     elif num == 1:
+#         print(余额不足)
+#         num -= 1
+#     time.sleep(1)
+#
+# while 1:
+#     for y in mycol.find():
+#         takeorder_id = y['订单号']
+#         takeorder_side = y['方向']
+#         takeorder_price = y['单价']
+#         print("-"*20)
+#         # 获取ETH最新价格
+#         ETH_Last = huobipro.fetch_ticker(order_symbol)['last']
+#         print("ETH最新价格",ETH_Last)
+#         # print("takeorder_id",takeorder_id)
+#         # print("takeorder_side", takeorder_side)
+#         # 查询订单状态
+#         order_status = huobipro.fetch_order_status(takeorder_id,order_symbol)
+#         print(order_status)
+#
+#         # 如果买单成交
+#         if order_status == "canceled" and takeorder_side == "buy":
+#             sell_side = "sell"
+#             sell_price = takeorder_price-0.5
+#             # 下卖单
+#             take_sell_order = huobipro.create_order(order_symbol, order_type, sell_side, order_amonut, sell_price)
+#
+#             # 卖单信息存入数据库
+#             print("开始写入数据库")
+#             mydict = {"单价": take_sell_order['price'], "订单号": take__sell_order['id'], "方向": take_order['side']}
+#             x = mycol.insert_one(mydict)
+#             # 删除已完成订单
+#             myquery = {"订单号":takeorder_id}
+#             mycol.delete_one(myquery)
+#             print("已删除完成订单,订单号为:",takeorder_id)
+#             time.sleep(3)
+#
+#         elif order_status == "canceled" and takeorder_side == "sell":
+#             buy_side = "buy"
+#             buy_price = takeorder_price + 0.5
+#
+#             take_buy_order = huobipro.create_order(order_symbol, order_type, buy_side, order_amonut, buy_price)
+#             # 卖单信息存入数据库
+#             print("开始写入数据库")
+#             mydict = {"单价": take_buy_order['price'], "订单号": take_buy_order['id'], "方向": take_order['side']}
+#             x = mycol.insert_one(mydict)
+#             # 删除已完成订单
+#             myquery = {"订单号": takeorder_id}
+#             mycol.delete_one(myquery)
+#             print("已删除完成订单,订单号为:", takeorder_id)
+#             time.sleep(3)
+#         else:
+#             print("订单处于其它状态")
+#             time.sleep(1)
+#
+# # 下单
+# # take_order = huobipro.create_order(order_symbol,order_type,order_side,order_amonut, order_price)
+# # pprint(take_order)
+# # 获取线上订单ID
+# takeorder_id = take_order['id']
+# print(takeorder_id)
+# # 获取线上订单方向
+# takeorder_side = take_order['side']
+# print(takeorder_side)
+# # 获取线上订单价格
+# takeorder_price = take_order['price']
+# print(takeorder_price)
+
+# for x in mycol.find():
+#   print("ID : ",x['订单号'])
+#   print("买单价 : ", x['买单价'])
+#   print("方向 : ", x['方向'])
+#   # 查询订单状态
+#   order_status = huobipro.fetch_order_status(x['订单号'],order_symbol)
+#   print(order_status)
+#   print("-" *20)
+#   time.sleep(2)
+# exit()
+# for x in mycol.find():
+#   print("ID : ",x['订单号'])
+#   print("买单价 : ", x['买单价'])
+#   print("方向 : ", x['方向'])
+#   # 查询订单状态
+#   order_status = huobipro.fetch_order_status(x['订单号'],order_symbol)
+#   print(order_status)
+#   print("-" *20)
+#   time.sleep(2)
+# exit()
+
+# mydict = {"订单号": takeorder_id, "方向": takeorder_side, "价格": takeorder_price}
+#
+# x = mycol.insert_one(mydict)
+#
+# bitmex = ccxt.bitmex({
+#     'apiKey':'XHV9HJSPKY8l__TZp_accNDm',
+#     'secret':'tE7yavYy5XI50rOVxs0Vyl_3QYk0l4Nsc-97EMERcYWWS-Jq'
+# })
+# # 获取帐户信息
+# pprint(bitmex.fetch_balance())
+# exit()
+#
+# huobipro = ccxt.huobipro({
+#     'apiKey':'ae6a6258-vf25treb80-5a7f96e9-1a2a4',
+#     'secret':'e4b873ae-60e45da0-5b405671-fbae3'
+# })
+# # 定义下单参数
+# order_symbol = 'DOT/USDT'
+# order_type = 'limit'
+# order_side = 'buy'
+# order_amonut = 5
+# order_price = 1.8
+# # # 获取交易对最新价格
+# # DOT_Last = huobipro.fetch_ticker(order_symbol)['last']
+# # print("DOT最新价格",DOT_Last)
+# # time.sleep(1)
+# # # # 下单方法
+# # # take_order = huobipro.create_order(order_symbol,order_type,order_side,order_amonut, order_price)
+# # # pprint(take_order)
+# # # # 获取线上订单ID
+# # # takeorder_id = take_order['id']
+# # # # 查询订单状态
+# # # order_status = huobipro.fetch_order_status(takeorder_id,order_symbol)
+# # # print(order_status)
+# # # print("程序运行结束")
+#
+# # 单个网格交易程序
+# # (需求:下1个订单,循环监控订单状态,如果买单成效,则下1个卖单,如果卖单成交,则下一个买单)
+# # 下单方法
+# take_order = huobipro.create_order(order_symbol,order_type,order_side,order_amonut, order_price)
+# pprint(take_order)
+#
+#
+# while 1:
+#     # 获取线上订单ID
+#     takeorder_id = take_order['id']
+#     print(takeorder_id)
+#     # # 获取线上订单
+#     takeorder_side = take_order['side']
+#     print(takeorder_side)
+#     # # 查询订单状态
+#     order_status = huobipro.fetch_order_status(takeorder_id, order_symbol)
+#     print(order_status)
+#     # 如果买单成交
+#     if order_status == "canceled" and takeorder_side == "buy":
+#         sell_side = "sell"
+#         sell_price = order_price + 3
+#         take_sell_order = huobipro.create_order(order_symbol, order_type, sell_side, order_amonut, order_price)
+#         takeorder_id = take_sell_order['id']
+#         time.sleep(1)
+#     elif order_status ==  "canceled" and takeorder_side == "sell":
+#         buy_side = "buy"
+#         buy_price = order_price - 0.5
+#         take_buy_order = huobipro.create_order(order_symbol, order_type, sell_side, order_amonut, order_price)
+#         time.sleep(1)
+#     else:
+#         print("订单处于其它状态")
+
